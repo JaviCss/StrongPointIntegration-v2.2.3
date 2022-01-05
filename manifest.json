@@ -1,0 +1,70 @@
+{
+  "author": {
+    "name": "Strongpoint Netsuite Integration",
+    "email": "support@strongpoint.io",
+    "url": "https://strongpoint.io"
+  },
+  "defaultLocale": "en",
+  "private": false,
+  "singleInstall": true,
+  "location": {
+    "support": {
+      "ticket_sidebar": "assets/iframe.html",
+      "modal": "assets/modal.html",
+      "nav_bar": "assets/configuration.html"
+    }
+  },
+  "domainWhitelist": ["strongpointsigned.herokuapp.com", "{{setting.accountid}}.restlets.api.netsuite.com"],
+  "parameters": [
+    {
+      "name": "accountid",
+      "type": "text",
+      "required": true,
+      "secure": false
+    },
+    {
+      "name": "consumeri",
+      "type": "text",
+      "required": true,
+      "secure": true
+    },
+    {
+      "name": "consumers",
+      "type": "text",
+      "required": true,
+      "secure": true
+    },{
+      "name": "tokeni",
+      "type": "text",
+      "required": true,
+      "secure": true
+    },{
+      "name": "tokens",
+      "type": "text",
+      "required": true,
+      "secure": true
+    },
+    {
+      "name": "requestApproveGroups",
+      "type": "hidden",
+      "default": "null",
+      "secure": false
+    },
+    {
+      "name": "approveGroups",
+      "type": "hidden",
+      "default": "null",
+      "secure": false
+    },
+    {
+      "name": "approvalProcess",
+      "type": "hidden",
+      "required": false,
+      "default": "null",
+      "secure": false
+    }
+  ],
+  "version": "2.2.3",
+  "frameworkVersion": "2.0"
+  
+}
