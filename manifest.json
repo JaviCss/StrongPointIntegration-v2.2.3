@@ -5,7 +5,7 @@
     "url": "https://strongpoint.io"
   },
   "defaultLocale": "en",
-  "private": false,
+  "private": true,
   "singleInstall": true,
   "location": {
     "support": {
@@ -64,7 +64,7 @@
       "secure": false
     }
   ],
-  "version": "2.2.3",
+  "version": "2.2.5",
   "frameworkVersion": "2.0"
   
 }

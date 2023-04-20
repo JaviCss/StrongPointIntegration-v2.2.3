@@ -40,8 +40,25 @@ async function setComent(state) {
     type: 'PUT',
     dataType: 'json',
     data: msj,
-  }).then(function (response) { }, function (response) { console.error(response.responseText)})
+  }).then(function (response) { }, function (response) { console.error(response.responseText) })
 }
+
+
+
+;
+
+async function getMetadata(client) {
+  let result = await client.metadata().then(function (metadata) {
+    return metadata.settings
+  })
+  return result
+}
+
+
+
+
+
+
 function loader() {
   $('#info #loader').addClass('loader')
   $('#info #loader-pane').addClass('loader-pane')
@@ -53,7 +70,7 @@ async function start(client) {
   let manifestInfo = await serviceZendesk.getManifestInfo(client)
   accountId = await serviceZendesk.getNsClietId(client)
   let requestApproveGroups = manifestInfo.requestApproveGroups
-  let approverGroups = manifestInfo.approverGroups
+  let approveGroups = manifestInfo.approveGroups
   let approvalProcess = manifestInfo.approvalProcess
   let isOperator, isAdministrator
   ticketNumber = ticketObj.ticketNumber
@@ -61,7 +78,7 @@ async function start(client) {
   ticketDescription = ticketObj.ticketDescription
   ticketStatus = ticketObj.ticketStatus
   requestApproveGroups = requestApproveGroups.split(',')
-  approverGroups = approverGroups.split(',')
+  approveGroups = approveGroups.split(',')
   approvalProcess = approvalProcess.split(',')
   userData?.groups.forEach(e => {
     if (requestApproveGroups.includes(e.name)) {
@@ -70,8 +87,8 @@ async function start(client) {
     }
   })
   userData?.groups.forEach(e => {
-    if (approverGroups.includes(e.name)) {
-      isAdministrator = approverGroups.includes(e.name)
+    if (approveGroups.includes(e.name)) {
+      isAdministrator = approveGroups.includes(e.name)
       return
     }
   })
@@ -81,63 +98,68 @@ async function start(client) {
   document.getElementById('btn-reject').style.display = 'none'
   document.getElementById('btn-close-status').style.display = 'none'
   document.getElementById('btn-push').style.display = 'none'
+
   getCustomizations(isOperator, isAdministrator, approvalProcess)
+
+
 }
 async function getCustomizations(isOperator, isAdministrator, approvalProcess) {
-  let getCustom = await serviceNetsuite.getCustomization(client, accountId)  
-  let getName = await serviceNetsuite.getName(client, accountId)
-  getName = JSON.parse(getName)
-  $('#synchronized').text(getName.companyname)
-  $('#policy').text(getCustom.policyApplied)
-  $('#level').text(getCustom.clReq)
-  crId = getCustom.crId
-  localStorage.setItem('crId', crId)
-  bundlesList = getCustom.affectedBundleID === '' ? [] : getCustom.affectedBundleID.split(',')
-  linkCR = getCustom.link
-  var element = document.getElementById('linkCR')
-  element.href = linkCR
+  let getCustom = await serviceNetsuite.getCustomization(client, accountId)
+  if (getCustom !== undefined) {
+    let getName = await serviceNetsuite.getName(client, accountId)
+    getName = JSON.parse(getName)
+    $('#synchronized').text(getName.companyname)
+    $('#policy').text(getCustom.policyApplied)
+    $('#level').text(getCustom.clReq)
+    crId = getCustom.crId
+    localStorage.setItem('crId', crId)
+    bundlesList = getCustom.affectedBundleID === '' ? [] : getCustom.affectedBundleID.split(',')
+    linkCR = getCustom.link
+    var element = document.getElementById('linkCR')
+    element.href = linkCR
 
-  statusNS = getCustom.statusBarState
-  if (statusNS == '') {
-    document.querySelector('#statusNS').textContent = 'N/S'
-  } else {
-    document.querySelector('#statusNS').textContent = statusNS
+    statusNS = getCustom.statusBarState
+    if (statusNS == '') {
+      document.querySelector('#statusNS').textContent = 'N/S'
+    } else {
+      document.querySelector('#statusNS').textContent = statusNS
+    }
+    let existingList = []
+    getCustom.custIds.forEach((id, idx) => {
+      existingList.push({ name: getCustom.custNames[idx], id: id })
+    })
+    if (isOperator && ['', 'Not Started', 'In Progress'].includes(getCustom.statusBarState) &&
+      ['SP Approval In Zendesk', 'SP Approval In NetSuite'].includes(approvalProcess[0]) && true) {
+      document.getElementById('btn-request').style.display = 'flex'
+      // document.getElementById('btn-reject').style.display = 'flex';
+    }
+    if (isAdministrator && getCustom.statusBarState === 'Pending Approval' &&
+      ['SP Approval In Zendesk'].includes(approvalProcess[0]) && true) {
+      document.getElementById('btn-approved').style.display = 'flex'
+      document.getElementById('btn-reject').style.display = 'flex'
+    }
+    // close
+    if (isAdministrator && getCustom.statusBarState === 'Approved' &&
+      ['SP Approval In Zendesk', 'No Approval Needed'].includes(approvalProcess[0]) && true) {
+      document.getElementById('btn-close-status').style.display = 'flex'
+    }
+    // push
+    if (isAdministrator && !['Completed', 'Rejected', 'Cancelled', 'Approved'].includes(
+      getCustom.statusBarState) && ['No Approval Needed'].includes(approvalProcess[0]) && true) {
+      document.getElementById('btn-push').style.display = 'flex'
+    }
+    localStorage.setItem('selectedCustomizationValues', JSON.stringify(existingList))
+    if (getCustom.proposedCusts != '') {
+      localStorage.setItem('ProposedCustomization', JSON.stringify(getCustom.proposedCusts.split(',')))
+    } else {
+      localStorage.setItem('ProposedCustomization', JSON.stringify([]))
+    }
+    //## RENDERS
+    renderlookup()
+    renderProposed()
+    renderBundle()
+    removeLoader()
   }
-  let existingList = []
-  getCustom.custIds.forEach((id, idx) => {
-    existingList.push({ name: getCustom.custNames[idx], id: id })
-  })
-  if (isOperator && ['', 'Not Started', 'In Progress'].includes(getCustom.statusBarState) &&
-    ['SP Approval In Zendesk', 'SP Approval In NetSuite'].includes(approvalProcess[0]) && true) {
-    document.getElementById('btn-request').style.display = 'flex'
-    // document.getElementById('btn-reject').style.display = 'flex';
-  }
-  if (isAdministrator && getCustom.statusBarState === 'Pending Approval' &&
-    ['SP Approval In Zendesk'].includes(approvalProcess[0]) && true) {
-    document.getElementById('btn-approved').style.display = 'flex'
-    document.getElementById('btn-reject').style.display = 'flex'
-  }
-  // close
-  if (isAdministrator && getCustom.statusBarState === 'Approved' &&
-    ['SP Approval In Zendesk', 'No Approval Needed'].includes(approvalProcess[0]) && true) {
-    document.getElementById('btn-close-status').style.display = 'flex'
-  }
-  // push
-  if (isAdministrator && !['Completed', 'Rejected', 'Cancelled', 'Approved'].includes(
-    getCustom.statusBarState) && ['No Approval Needed'].includes(approvalProcess[0]) && true) {
-    document.getElementById('btn-push').style.display = 'flex'
-  }
-  localStorage.setItem('selectedCustomizationValues', JSON.stringify(existingList))
-  if (getCustom.proposedCusts != '') {
-    localStorage.setItem('ProposedCustomization', JSON.stringify(getCustom.proposedCusts.split(',')))
-  } else {
-    localStorage.setItem('ProposedCustomization', JSON.stringify([]))
-  }
-  //## RENDERS
-  renderlookup()
-  renderProposed()
-  renderBundle()
-  removeLoader()
 }
 
 /*SHOW HOME */
@@ -265,7 +287,7 @@ function renderBundle() {
 }
 window.addBundle = async function addBundle() {
   //valida los dats del input
- // loader()
+  // loader()
   //compara si esta vacio
   if ($('#inp-bundle')[0].value !== '') {
     //compara si es un numero
@@ -345,15 +367,15 @@ window.changeStatus = async function changeStatus(action) {
   switch (action) {
     case 'request':
       updateTicketStatus('PendingApproval')
-     //setComent('PendingApproval')
+      //setComent('PendingApproval')
       break
     case 'approved':
       updateTicketStatus('Approve')
-     // setComent('Approve')
+      // setComent('Approve')
       break
     case 'reject':
       updateTicketStatus('Reject')
-     // setComent('Reject')
+      // setComent('Reject')
       break
     case 'close':
       updateTicketStatus('Closed')
@@ -365,9 +387,9 @@ window.changeStatus = async function changeStatus(action) {
 }
 async function updateTicketStatus(newState) {
   $('#info #loader').addClass('loader')
-$('#info #loader-pane').addClass('loader-pane')
+  $('#info #loader-pane').addClass('loader-pane')
   let setUpdateTicketStatus = await serviceNetsuite.setUpdateTicketStatus(client, newState, accountId)
-  statusNS = setUpdateTicketStatus.statusBarState 
+  statusNS = setUpdateTicketStatus.statusBarState
   start(client)
 }
 

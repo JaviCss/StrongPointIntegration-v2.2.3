@@ -186,7 +186,7 @@ async function getCustomization(client, accountId) {
 
 
     }).catch(e => {
-        console.log(e)
+        console.error(e)
         const elementos = document.querySelectorAll('#infoNs')
 
         for (let i = 0; i < elementos.length; i++) {
@@ -323,6 +323,7 @@ async function setUpdateTicketStatus(client, newState, accountId) {
     const scriptDeploy = 'flo_cr_api'
     const action = 'createCR'
     const formValues = {
+        action: 'createCR',
         integrationCreatedBy: 'Set by Zendesk',
         externalLink: ticketInfo.urlticket,
         ticketID: ticketInfo.ticketNumber,
@@ -333,21 +334,24 @@ async function setUpdateTicketStatus(client, newState, accountId) {
     }
     
 
-
-    let pathEncoded = `/app/site/hosting/restlet.nl?script=customscript_${scriptDeploy}&deploy=customdeploy_${scriptDeploy}&action=${action}&${setPathEncoded(formValues)}`
-
-    const head = await getSigned(client, accountId, scriptDeploy, action, formValues)   
+    let pathEncoded = `/app/site/hosting/restlet.nl?script=customscript_${scriptDeploy}&deploy=customdeploy_${scriptDeploy}`
+    const head = await getSignedForPost(client, accountId, scriptDeploy)   
     let urln = domainBase + pathEncoded
     let options = {
         url: urln,
-        type: 'GET',
+        type: 'POST',
         headers: head,
         secure: true,
         cors: false,
         contentType: 'application/json',
+        data:  JSON.stringify(formValues) 
     }
-
-    return client.request(options).then(results => { return results })
+    return client.request(options).then( 
+        function (response) {
+            return response
+         },
+        function (response) { console.error(response);}  
+        )
 }
 //BUNDLE
 async function setBundle(client, bundleID, accountId) {
@@ -634,7 +638,64 @@ function getSigned(client, accountId, scriptDeploy, action, formValues) {
             "domainBase": `https://${accountId}.restlets.api.netsuite.com`,
             "account_id": `${accountId2}`,
             "path": path,
-            "pathEncoded": pathEncoded
+            "pathEncoded": pathEncoded,
+            "method": 'GET'
+        }),
+    }
+    return client.request(p).then(results => {
+        let authHeader = results.headers.Authorization.split(',')
+        authHeader.forEach((item, i) => {
+            if (i == 1) {
+                let prop = item.split('=')
+                oauth_nonce = prop[1]
+            }
+            if (i == 2) {
+                let prop = item.split('=')
+                oauth_signature = prop[1]
+            }
+
+            if (i == 4) {
+                let prop = item.split('=')
+                oauth_timestamp = prop[1]
+            }
+
+            if (i == 7) {
+                let prop = item.split('=')
+                realm = prop[1]
+            }
+        })
+
+        let head = { Authorization: `OAuth oauth_consumer_key="{{setting.consumeri}}", oauth_nonce=${oauth_nonce}, oauth_signature=${oauth_signature}, oauth_signature_method="HMAC-SHA256", oauth_timestamp=${oauth_timestamp}, oauth_token="{{setting.tokeni}}", oauth_version="1.0",realm=${realm}` }
+        return head
+    })
+
+}
+function getSignedForPost(client, accountId, scriptDeploy) {
+
+
+    let accountId2 = accountId.toUpperCase().replace('-', '_')
+    //VARIABLES
+    let oauth_nonce, oauth_signature, oauth_timestamp, realm;
+    let path = `/app/site/hosting/restlet.nl?script=customscript_${scriptDeploy}&deploy=customdeploy_${scriptDeploy}`
+    let pathEncoded = `/app/site/hosting/restlet.nl?script=customscript_${scriptDeploy}&deploy=customdeploy_${scriptDeploy}`
+
+    const p = {
+        url: `https://strongpointsigned.herokuapp.com/sign.js`,
+        headers: {
+            "consumeri": "{{setting.consumeri}}",
+            "consumers": "{{setting.consumers}}",
+            "tokeni": "{{setting.tokeni}}",
+            "tokens": "{{setting.tokens}}",
+        },
+        secure: true,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            "domainBase": `https://${accountId}.restlets.api.netsuite.com`,
+            "account_id": `${accountId2}`,
+            "path": path,
+            "pathEncoded": pathEncoded,
+            "method": 'POST'
         }),
     }
     return client.request(p).then(results => {

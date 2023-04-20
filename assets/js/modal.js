@@ -90,8 +90,6 @@ window.addCustom = async function addCustom() {
   let accountId = await serviceZendesk.getNsClietId(client)
   //addCostumization existing NS  
   let addCustomSelecte = await serviceNetsuite.addCustomSelecte(client, existingId, localStorage.getItem('zendesk-tiquet-id'), accountId)
-  console.log(addCustomSelecte)
-  
   let existingList = []
   if (addCustomSelecte.status === 'success') {
     addCustomSelecte.custIds.forEach((id, idx) => {

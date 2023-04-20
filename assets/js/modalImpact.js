@@ -12,7 +12,7 @@ async function impactAnalisis() {
   $('#pills-tabContent #loader-pane').addClass('loader-pane')
   ticketId = localStorage.getItem('crId')
   let accountId = await serviceZendesk.getNsClietId(client)
-  let getImpactAnalisis = await serviceNetsuite.getImpactAnalisis(client, ticketId,accountId)
+  let getImpactAnalisis = await serviceNetsuite.getImpactAnalisis(client, ticketId, accountId)
   let impact_analysis_data = getImpactAnalisis
   if (getImpactAnalisis.message === 'success') {
     impact_analysis_data = impact_analysis_data.data
@@ -47,7 +47,7 @@ async function impactAnalisis() {
             e.host = `${accountId}`
           })
         })
-        
+
       } else {
         pillsSafe.innerHTML =
           '<p class="os-16 fw-bold mt-5">No information available to display</p>'
@@ -105,7 +105,7 @@ async function impactAnalisis() {
   }
   if (getImpactAnalisis.statusText === 'error') {
     removeLoader()
-  } 
+  }
 }
 function removeLoader() {
   if ($(`#loader`)) {
@@ -114,3 +114,6 @@ function removeLoader() {
   }
 }
 
+
+
+https://goliveexperts.atlassian.net/rest/api/2/issue/nsdel-2

@@ -57,6 +57,7 @@ function getTicketInfo(client) {
     })
 }
 async function getManifestInfo(client) {   
+    /*
     let installationId = await getinstallationId(client)
     let settings = {
         url: `/api/v2/apps/installations/${installationId}`,
@@ -64,7 +65,23 @@ async function getManifestInfo(client) {
         dataType: 'json',
     }
     let obj = await getSettingsobj(client,settings)
-    return obj    
+    return obj 
+    */
+
+        let result = await client.metadata().then(function (metadata) {
+          return metadata.settings
+        })
+        return result
+        /*
+        let approverGroups = data.settings.approveGroups
+        let requestApproveGroups = data.settings.requestApproveGroups
+        let approvalProcess = data.settings.approvalProcess
+        return {
+            approverGroups,
+            requestApproveGroups,
+            approvalProcess,
+        }
+      */
 }
 
 function getNsClietId(client) {   
